@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WooCommerce Ticket System
  * Description: Generates a PDF ticket with unique ticket numbers for WooCommerce orders and adds a download link in customer emails.
- * Version: 1.4.9
+ * Version: 1.5.3
  * Author: Ariel Batoon
  */
 
