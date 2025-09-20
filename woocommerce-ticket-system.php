@@ -1,17 +1,14 @@
 <?php
 /**
  * Plugin Name: WooCommerce Ticket System
- * Description: Generates a PDF ticket with unique ticket numbers for WooCommerce orders and attaches it to customer emails.
- * Version: 1.2.1
+ * Description: Generates a PDF ticket with unique ticket numbers for WooCommerce orders and adds a download link in customer emails.
+ * Version: 1.3.1
  * Author: Ariel Batoon
  */
 
 if (!defined('ABSPATH')) exit;
 
-// ✅ Global for current ticket number
-global $wtp_current_ticket_number;
-
-// ✅ Create table on plugin activation
+// Create tickets table
 register_activation_hook(__FILE__, 'wtp_create_ticket_table');
 function wtp_create_ticket_table() {
     global $wpdb;
@@ -32,52 +29,50 @@ function wtp_create_ticket_table() {
     dbDelta($sql);
 }
 
-// ✅ Generate ticket and PDF after checkout
-add_action('woocommerce_thankyou', 'wtp_generate_and_store_ticket', 10, 1);
-function wtp_generate_and_store_ticket($order_id) {
-    global $wtp_current_ticket_number;
-
-    $order = wc_get_order($order_id);
-    if (!$order) return;
+// Generate ticket inside email if not exists
+add_action('woocommerce_email_before_order_table', 'wtp_generate_ticket_in_email', 10, 4);
+function wtp_generate_ticket_in_email($order, $sent_to_admin, $plain_text, $email) {
+    if ($sent_to_admin) return;
+    if (!in_array($email->id, ['customer_processing_order', 'customer_completed_order'])) return;
 
     global $wpdb;
     $table_name = $wpdb->prefix . 'event_tickets';
 
-    // Check if ticket already exists
     $ticket_number = $order->get_meta('_ticket_number');
 
     if (!$ticket_number) {
-        // Generate a unique ticket number
+        // Generate unique ticket number
         do {
             $ticket_number = rand(10000, 50000);
             $exists = $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM $table_name WHERE ticket_number = %d", $ticket_number
+                "SELECT COUNT(*) FROM $table_name WHERE ticket_number = %d",
+                $ticket_number
             ));
         } while ($exists > 0);
 
-        // Save in DB
+        // Save ticket for each product
         foreach ($order->get_items() as $item) {
             $wpdb->insert($table_name, [
-                'order_id'      => $order_id,
-                'product_id'    => $item->get_product_id(),
+                'order_id' => $order->get_id(),
+                'product_id' => $item->get_product_id(),
                 'ticket_number' => $ticket_number,
-                'customer_email'=> $order->get_billing_email(),
+                'customer_email' => $order->get_billing_email(),
             ]);
         }
 
         // Save in order meta
         $order->update_meta_data('_ticket_number', $ticket_number);
         $order->save();
+
+        // Generate PDF
+        wtp_generate_ticket_pdf($order, $ticket_number);
     }
 
-    // Store globally for this request
-    $wtp_current_ticket_number = $ticket_number;
-
-    // Generate PDF
-    wtp_generate_ticket_pdf($order, $ticket_number);
+    // Now output ticket info in the email
+    wtp_add_ticket_link_to_email($order, $ticket_number, $plain_text);
 }
 
-// ✅ PDF generator function
+// PDF generator
 function wtp_generate_ticket_pdf($order, $ticket_number) {
     $upload_dir = wp_upload_dir();
     $ticket_dir = $upload_dir['basedir'] . '/tickets';
@@ -86,10 +81,8 @@ function wtp_generate_ticket_pdf($order, $ticket_number) {
     $ticket_path = $ticket_dir . '/ticket-' . $ticket_number . '.pdf';
 
     $first_name = $order->get_billing_first_name();
-    $products   = [];
-    foreach ($order->get_items() as $item) {
-        $products[] = $item->get_name();
-    }
+    $products = [];
+    foreach ($order->get_items() as $item) $products[] = $item->get_name();
 
     $html = "
         <h2>Concert Ticket</h2>
@@ -111,27 +104,14 @@ function wtp_generate_ticket_pdf($order, $ticket_number) {
     $dompdf->render();
 
     file_put_contents($ticket_path, $dompdf->output());
-
-    return $ticket_path;
 }
 
-// ✅ Add Ticket Information section inside WooCommerce emails
-add_action('woocommerce_email_after_order_table', 'wtp_add_ticket_info', 15, 4);
-function wtp_add_ticket_info($order, $sent_to_admin, $plain_text, $email) {
-    if ($sent_to_admin) return;
-    if (!in_array($email->id, ['customer_processing_order', 'customer_completed_order'])) return;
-
-    // Fetch ticket number from order meta
-    $ticket_number = $order->get_meta('_ticket_number');
-    if (!$ticket_number) return; // no ticket, skip
-
+// Output download link in email
+function wtp_add_ticket_link_to_email($order, $ticket_number, $plain_text = false) {
     $first_name = $order->get_billing_first_name();
-    $tickets = [];
-    foreach ($order->get_items() as $item) {
-        $tickets[] = $item->get_name();
-    }
+    $products = [];
+    foreach ($order->get_items() as $item) $products[] = $item->get_name();
 
-    // Construct URL to PDF
     $upload_dir = wp_upload_dir();
     $ticket_url = $upload_dir['baseurl'] . '/tickets/ticket-' . $ticket_number . '.pdf';
 
@@ -139,14 +119,14 @@ function wtp_add_ticket_info($order, $sent_to_admin, $plain_text, $email) {
         echo "\n\n🎟️ Ticket Information\n";
         echo "Hi {$first_name},\n";
         echo "Ticket Number: #" . str_pad($ticket_number, 5, '0', STR_PAD_LEFT) . "\n";
-        if (!empty($tickets)) echo "You purchased: " . implode(', ', $tickets) . "\n";
+        if (!empty($products)) echo "You purchased: " . implode(', ', $products) . "\n";
         echo "Download your ticket here: {$ticket_url}\n";
     } else {
         echo '<h2>🎟️ Ticket Information</h2>';
         echo '<p>';
         echo 'Hi ' . esc_html($first_name) . ',<br>';
         echo 'Ticket Number: <strong>#' . str_pad($ticket_number, 5, '0', STR_PAD_LEFT) . '</strong><br>';
-        if (!empty($tickets)) echo 'You purchased: ' . implode(', ', $tickets) . '<br>';
+        if (!empty($products)) echo 'You purchased: ' . implode(', ', $products) . '<br>';
         echo 'Download your ticket here: <a href="' . esc_url($ticket_url) . '" target="_blank">Download Ticket (PDF)</a>';
         echo '</p>';
     }
