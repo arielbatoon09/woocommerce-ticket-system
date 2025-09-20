@@ -1,0 +1,11 @@
+1. Allows Event Manager / Admin to create a Ticket Layouts
+2. Allows to assign the Ticket Layouts to a specific prodcut variations.
+3. Generate PDF File containing Ticket Details
+4. Sending an email contains the Downloadable PDF File Link
+5. Generated Ticket Numbers will be stored in the database to avoid duplicates numbers.
+
+
+TODO:
+1. The Ticket Type in the PDF should have correct pallette at the left pannel
+2. Make sure to handle 1 - 50,000 tickets generated to avoid issue when exceed
+3. Handles multiple items in 1 order.

@@ -92,27 +92,70 @@ class WTP_Ticket_Generator {
             $type_bg = $type_colors[$ticket_type] ?? '#6c757d';
     
             $html = "
-            <div style='width:600px; height:300px; border:1px solid #000; margin-bottom:20px; position:relative;
-                        background-image:url({$bg_url}); background-size:cover; background-position:center;'>
-    
-                <!-- Left side ticket type -->
-                <div style='position:absolute; left:20px; top:20px; width:120px; height:60px; 
-                            background:{$type_bg}; color:#fff; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:bold;'>
-                    {$ticket_type}
-                </div>
-    
-                <!-- Right side date -->
-                <div style='position:absolute; right:20px; top:20px; text-align:center; color:#000;'>
-                    <div style='font-size:48px; font-weight:bold;'>{$day}</div>
-                    <div style='font-size:18px;'>{$month_year}</div>
-                </div>
-    
-                <!-- Ticket number -->
-                <div style='position:absolute; right:20px; bottom:20px; font-size:16px; font-weight:bold;'>
-                    Ticket #: {$ticket_number}
-                </div>
-            </div>
-            ";
+<div style='
+    width:700px; height:300px; overflow:hidden; position:relative;
+    font-family: Arial, sans-serif; color:#fff; box-shadow:0 4px 24px rgba(0,0,0,0.15);'>
+
+    <!-- Left vertical ticket type -->
+    <div style='
+        position:absolute; left:16px; top:14px; width:90px; height:90%; background:{$type_bg}; z-index:2; 
+        display:flex; align-items:center; justify-content:center; border-radius:20px;'>
+        <div style='
+            color:#FFF; font-size:32px; font-weight:bold; letter-spacing:2px;
+            width:100%; text-align:center;
+            transform: translateY(130px) rotate(-90deg);
+            white-space: nowrap;
+            line-height: 1;
+            display: inline-block;'>
+            ".strtoupper($ticket_type)."
+        </div>
+    </div>
+
+    <!-- Main background gradient + overlay -->
+    <div style='
+        position:absolute; left:0; top:0; right:0; bottom:0; z-index:0;
+        background: linear-gradient(90deg, #7b2ff2 0%, #f357a8 100%);
+    '>
+        <!-- Dark overlay to make gradient darker -->
+        <div style='
+            position:absolute; inset:0;
+            background-color: rgba(0,0,0,0.35);
+        '></div>
+
+        <!-- Background image overlay -->
+        <div style='
+            position:absolute; inset:0;
+            background-image:url({$bg_url});
+            background-size:contain; background-position:center; opacity:0.85;
+        '></div>
+
+        <!-- Dark overlay on image -->
+        <div style='
+            position:absolute; inset:0;
+            background-color: rgba(0,0,0,0.10);
+        '></div>
+    </div>
+
+    <!-- Right: Date and Ticket Number -->
+    <div style='
+        position:absolute; right:24px; top:32px; width:110px; text-align:center; z-index:3;'>
+        <div style='font-size:64px; font-weight:bold; line-height:1; color:#fff;'>{$day}</div>
+        <div style='font-size:18px; color:#fff; margin-top:2px; text-shadow:0 2px 8px #000;'>{$month_year}</div>
+        <div style='font-size:12px; color:#fff; margin-top:14px;'>CGC Grounds,<br>Clark Freeport Zone</div>
+    </div>
+
+    <!-- Right: Ticket Number -->
+    <div style='
+        position:absolute; right:24px; bottom:32px; width:120px; height:70px; background:#fff; border-radius:12px;
+        display:flex; align-items:center; justify-content:center; z-index:3; box-shadow:0 2px 8px #0002;
+        text-align:center;'>
+        <span style='display:block; color:#000; font-size:18px; font-weight:bold; letter-spacing:1px; line-height:normal; padding-top: 14px;'>
+            Ticket #:<br>{$ticket_number}
+        </span>
+    </div>
+
+</div>
+";
     
             $full_html .= $html;
         }
