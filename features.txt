@@ -8,4 +8,4 @@
 TODO:
 1. The Ticket Type in the PDF should have correct pallette at the left pannel
 2. Make sure to handle 1 - 50,000 tickets generated to avoid issue when exceed
-3. Handles multiple items in 1 order.
+3. Handles multiple items in 1 order so make sure it assigns unique ticket number each.
