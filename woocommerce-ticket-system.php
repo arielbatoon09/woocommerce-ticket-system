@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WooCommerce Ticket System
  * Description: Generates a PDF ticket with unique ticket numbers for WooCommerce orders and adds a download link in customer emails.
- * Version: 1.3.2
+ * Version: 1.4.9
  * Author: Ariel Batoon
  */
 
@@ -12,9 +12,11 @@ if (!defined('ABSPATH')) exit;
 require_once plugin_dir_path(__FILE__) . 'includes/class-ticket-table.php';
 require_once plugin_dir_path(__FILE__) . 'includes/class-ticket-generator.php';
 require_once plugin_dir_path(__FILE__) . 'includes/class-email-hook.php';
+require_once plugin_dir_path(__FILE__) . 'includes/class-wtp-admin.php';
+require_once plugin_dir_path(__FILE__) . 'includes/class-wtp-product-variation-layout.php';
 
 // Register activation hook to create table
-register_activation_hook(__FILE__, ['WTP_Ticket_Table', 'create_table']);
+register_activation_hook(__FILE__, ['WTP_Ticket_Table', 'create_tables']);
 
 // Hook email and ticket generation
 add_action('woocommerce_email_before_order_table', ['WTP_Email_Hook', 'generate_ticket_in_email'], 10, 4);
